@@ -7,5 +7,16 @@
       "avatarPath": "avatars/Regnar-d8863cc3-54b1-4bf8-99a8-059114076d02.jpg"
     }
   },
-  "posts": []
+  "posts": [
+    {
+      "id": "bb0a5db0-5488-47f7-a3d8-44c7e66c0aef",
+      "type": "image",
+      "title": "اولین پست Pinky-Hub",
+      "caption": "گل برای گل",
+      "author": "Regnar",
+      "mediaPath": "images/59a2d740-ec6e-4195-b715-023c71bacc9a.jpg",
+      "likes": [],
+      "createdAt": "2026-10-30T16:49:39.966Z"
+    }
+  ]
 }
