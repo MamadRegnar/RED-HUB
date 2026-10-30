@@ -5,7 +5,7 @@
       "passwordHash": "3ea87a56da3844b420ec2925ae922bc731ec16a4fc44dcbeafdad49b0e61d39c",
       "createdAt": "2026-10-30T16:31:44.407Z",
       "avatarPath": "avatars/Regnar-d8863cc3-54b1-4bf8-99a8-059114076d02.jpg",
-      "coins": 20,
+      "coins": 15,
       "followers": [],
       "following": [],
       "giftsReceived": []
@@ -18,7 +18,9 @@
       "coins": 20,
       "followers": [],
       "following": [],
-      "giftsReceived": []
+      "giftsReceived": [
+        "d27a-4712-ae71"
+      ]
     }
   },
   "posts": [],
