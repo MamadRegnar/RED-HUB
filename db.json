@@ -7,8 +7,11 @@
       "avatarPath": "avatars/Regnar-d8863cc3-54b1-4bf8-99a8-059114076d02.jpg",
       "coins": 15,
       "followers": [],
-      "following": [],
-      "giftsReceived": []
+      "following": [
+        "PinkyHub"
+      ],
+      "giftsReceived": [],
+      "giftsSent": []
     },
     "PinkyHub": {
       "username": "PinkyHub",
@@ -16,11 +19,14 @@
       "createdAt": "2026-10-30T17:57:02.694Z",
       "avatarPath": "",
       "coins": 20,
-      "followers": [],
+      "followers": [
+        "Regnar"
+      ],
       "following": [],
       "giftsReceived": [
         "d27a-4712-ae71"
-      ]
+      ],
+      "giftsSent": []
     }
   },
   "posts": [],
