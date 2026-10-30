@@ -12,5 +12,12 @@
     }
   },
   "posts": [],
-  "gifts": []
+  "gifts": [
+    {
+      "id": "d27a-4712-ae71",
+      "name": "Sexy Hentai",
+      "price": 5,
+      "mediaPath": "gifts/f6ab-4ea7-bf88.png"
+    }
+  ]
 }
