@@ -1,4 +1,10 @@
 {
-  "users": {},
+  "users": {
+    "Regnar": {
+      "username": "Regnar",
+      "passwordHash": "3ea87a56da3844b420ec2925ae922bc731ec16a4fc44dcbeafdad49b0e61d39c",
+      "createdAt": "2026-10-30T16:31:44.407Z"
+    }
+  },
   "posts": []
 }
