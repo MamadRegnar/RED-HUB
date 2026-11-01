@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>GitHub File Uploader</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Tahoma, sans-serif;
+    background: #1e1e2e; color: #cdd6f4;
+    max-width: 760px; margin: 24px auto; padding: 20px;
+  }
+  h1 { color: #89b4fa; font-size: 22px; margin-bottom: 4px; }
+  .info {
+    background: #313244; padding: 10px 14px; border-radius: 6px;
+    font-size: 13px; margin-bottom: 16px;
+  }
+  .info b { color: #89b4fa; }
+  label { display: block; margin-top: 12px; color: #a6adc8; font-size: 13px; }
+  input, button {
+    width: 100%; padding: 9px; border-radius: 6px;
+    border: 1px solid #45475a; background: #313244; color: #cdd6f4;
+    font-family: inherit; font-size: 14px;
+  }
+  input:focus { outline: 2px solid #89b4fa; }
+  button {
+    margin-top: 18px; background: #89b4fa; color: #1e1e2e;
+    font-weight: bold; cursor: pointer; border: none;
+    font-size: 15px; padding: 11px;
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button:hover:not(:disabled) { background: #b4befe; }
+  .row { display: flex; gap: 12px; }
+  .row > div { flex: 1; }
+  .hint { font-size: 11px; color: #6c7086; }
+  #log {
+    margin-top: 16px; background: #11111b; border-radius: 6px;
+    padding: 10px; font-family: Consolas, monospace; font-size: 12px;
+    height: 220px; overflow-y: auto; white-space: pre-wrap; color: #a6e3a1;
+  }
+  .file-info { margin-top: 6px; font-size: 12px; color: #f9e2af; }
+</style>
+</head>
+<body>
+
+<h1>⬆ GitHub File Uploader</h1>
+<div class="info" id="configInfo"></div>
+
+<div class="row">
+  <div>
+    <label>مسیر در ریپو <span class="hint">(اختیاری، مثل uploads/images)</span></label>
+    <input id="remoteDir" placeholder="uploads">
+  </div>
+  <div>
+    <label>پیام کامیت <span class="hint">(اختیاری)</span></label>
+    <input id="commitMsg" placeholder="Upload file via web">
+  </div>
+</div>
+
+<label>انتخاب فایل</label>
+<input id="file" type="file">
+<div class="file-info" id="fileInfo"></div>
+
+<button id="uploadBtn">⬆ آپلود به گیت‌هاب</button>
+
+<div id="log"></div>
+
+<script>
+/* ================== تنظیمات گیت‌هاب (اینجا پر کن) ================== */
+const CONFIG = {
+  username: "MamadRegnar",       // نام کاربری گیت‌هاب
+  token:    "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",  // توکن با scope: repo
+  repo:     "RED-HUB",           // نام ریپازیتوری
+  branch:   "main",                // شاخه مقصد
+};
+/* ================================================================== */
+
+const API = "https://api.github.com";
+const $ = id => document.getElementById(id);
+
+function log(msg) {
+  const el = $("log");
+  el.textContent += msg + "\n";
+  el.scrollTop = el.scrollHeight;
+}
+
+const encPath = p => p.split("/").map(encodeURIComponent).join("/");
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result.split(",")[1]);
+    r.onerror = () => reject(new Error("خطا در خواندن فایل"));
+    r.readAsDataURL(file);
+  });
+}
+
+async function gh(path, opts = {}) {
+  const resp = await fetch(API + path, {
+    ...opts,
+    headers: {
+      "Authorization": "token " + CONFIG.token,
+      "Accept": "application/vnd.github+json",
+      "Content-Type": "application/json",
+      ...(opts.headers || {})
+    }
+  });
+  const text = await resp.text();
+  const data = text ? JSON.parse(text) : {};
+  if (!resp.ok) throw new Error(`${resp.status} — ${data.message || text}`);
+  return data;
+}
+
+async function uploadViaContents(path, b64, message) {
+  const url = `/repos/${CONFIG.username}/${CONFIG.repo}/contents/${encPath(path)}`;
+  let sha = null;
+  try {
+    const existing = await gh(`${url}?ref=${encodeURIComponent(CONFIG.branch)}`);
+    sha = existing.sha;
+    log("→ فایل موجود است، بازنویسی می‌شود.");
+  } catch (e) {
+    if (!e.message.startsWith("404")) throw e;
+    log("→ فایل جدید است.");
+  }
+  const payload = { message, content: b64, branch: CONFIG.branch };
+  if (sha) payload.sha = sha;
+  const res = await gh(url, { method: "PUT", body: JSON.stringify(payload) });
+  return res.content.html_url;
+}
+
+async function uploadViaGitData(path, b64, message) {
+  log("  · ایجاد blob ...");
+  const blob = await gh(`/repos/${CONFIG.username}/${CONFIG.repo}/git/blobs`, {
+    method: "POST",
+    body: JSON.stringify({ content: b64, encoding: "base64" })
+  });
+
+  log("  · گرفتن ref ...");
+  const ref = await gh(`/repos/${CONFIG.username}/${CONFIG.repo}/git/ref/heads/${CONFIG.branch}`);
+  const parentSha = ref.object.sha;
+
+  log("  · گرفتن tree قبلی ...");
+  const parent = await gh(`/repos/${CONFIG.username}/${CONFIG.repo}/git/commits/${parentSha}`);
+
+  log("  · ساخت tree جدید ...");
+  const tree = await gh(`/repos/${CONFIG.username}/${CONFIG.repo}/git/trees`, {
+    method: "POST",
+    body: JSON.stringify({
+      base_tree: parent.tree.sha,
+      tree: [{ path, mode: "100644", type: "blob", sha: blob.sha }]
+    })
+  });
+
+  log("  · ساخت کامیت ...");
+  const commit = await gh(`/repos/${CONFIG.username}/${CONFIG.repo}/git/commits`, {
+    method: "POST",
+    body: JSON.stringify({ message, tree: tree.sha, parents: [parentSha] })
+  });
+
+  log("  · به‌روزرسانی branch ...");
+  await gh(`/repos/${CONFIG.username}/${CONFIG.repo}/git/refs/heads/${CONFIG.branch}`, {
+    method: "PATCH",
+    body: JSON.stringify({ sha: commit.sha, force: false })
+  });
+
+  return `https://github.com/${CONFIG.username}/${CONFIG.repo}/blob/${CONFIG.branch}/${path}`;
+}
+
+// نمایش خلاصه تنظیمات
+(function showConfig() {
+  const ok = CONFIG.username && CONFIG.username !== "your-username" &&
+             CONFIG.token && CONFIG.token !== "ghp_xxxxxxxxxxxxxx" &&
+             CONFIG.repo && CONFIG.repo !== "your-repo";
+  $("configInfo").innerHTML = ok
+    ? `ریپو: <b>${CONFIG.username}/${CONFIG.repo}</b> — شاخه: <b>${CONFIG.branch}</b>`
+    : `<span style="color:#f38ba8">⚠ تنظیمات CONFIG را بالای اسکریپت پر کن.</span>`;
+  if (!ok) $("uploadBtn").disabled = true;
+})();
+
+$("file").addEventListener("change", () => {
+  const f = $("file").files[0];
+  $("fileInfo").textContent = f
+    ? `${f.name} — ${(f.size / 1024).toFixed(1)} KB`
+    : "";
+});
+
+$("uploadBtn").addEventListener("click", async () => {
+  const dir  = $("remoteDir").value.trim().replace(/^\/+|\/+$/g, "");
+  const msg  = $("commitMsg").value.trim();
+  const file = $("file").files[0];
+
+  if (!file) { alert("یک فایل انتخاب کن."); return; }
+
+  const remotePath = dir ? `${dir}/${file.name}` : file.name;
+  const commitMessage = msg || `Upload ${file.name}`;
+
+  $("uploadBtn").disabled = true;
+  log(`\n→ شروع آپلود: ${remotePath} (${(file.size / 1024).toFixed(1)} KB)`);
+
+  try {
+    if (file.size > 50 * 1024 * 1024) throw new Error("حداکثر حجم مجاز ۵۰ مگابایت است.");
+
+    log("→ خواندن فایل و تبدیل به base64 ...");
+    const b64 = await readFileAsBase64(file);
+
+    let url;
+    if (file.size < 900 * 1024) {
+      log("→ روش: Contents API");
+      url = await uploadViaContents(remotePath, b64, commitMessage);
+    } else {
+      log("→ روش: Git Data API (فایل بزرگ)");
+      url = await uploadViaGitData(remotePath, b64, commitMessage);
+    }
+
+    log(`✅ آپلود موفق: ${url}`);
+  } catch (e) {
+    log(`❌ خطا: ${e.message}`);
+  } finally {
+    $("uploadBtn").disabled = false;
+  }
+});
+</script>
+</body>
+</html>
