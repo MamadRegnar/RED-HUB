@@ -12,7 +12,19 @@
       "giftsSent": []
     }
   },
-  "posts": [],
+  "posts": [
+    {
+      "id": "e8b9-4819-bbdb",
+      "type": "video",
+      "title": "ن",
+      "caption": "ادمین",
+      "author": "PinkyHub",
+      "mediaPath": "https://raw.githubusercontent.com/MamadRegnar/RED-HUB/main/media/1793599870420-prqy8bxvs6e.png",
+      "thumbnailPath": "",
+      "likes": [],
+      "createdAt": "2026-11-02T06:11:12.771Z"
+    }
+  ],
   "gifts": [
     {
       "id": "d27a-4712-ae71",
